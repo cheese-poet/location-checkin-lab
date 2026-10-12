@@ -1,0 +1,32 @@
+# 统一行尾，避免跨平台克隆时出现大量「整个文件都改了」的伪 diff。
+#
+# 背景：Git for Windows 默认 core.autocrlf=true，会把仓库里的 LF 在工作区换成 CRLF，
+# 于是 `git add` 时会刷一屏 "LF will be replaced by CRLF" 警告。
+# 显式声明后行为可预期，且克隆到 Linux 上不会带着 CRLF。
+
+# 默认：检出时按平台，入库统一 LF
+* text=auto eol=lf
+
+# Windows 专用脚本必须是 CRLF，否则某些 shell / 老版本 PowerShell 会解析异常
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件不要做行尾转换
+*.jar  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.keystore binary
+*.jks  binary
+*.apk  binary
+*.aab  binary
+*.zip  binary
+*.7z   binary
+
+# 让 GitHub 的语言统计正确：这个工程是 Java 检测引擎 + Kotlin 测试夹具，
+# README 里的表格和报告样例不应该被算成代码。
+*.md   linguist-documentation
