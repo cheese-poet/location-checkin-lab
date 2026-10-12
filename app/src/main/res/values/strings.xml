@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">位置签到实验室</string>
+
+    <string name="hint">这是一个自测工程：左边造攻击数据，右边验证检测规则。\n先看状态行，若「模拟位置授权」为否，请在开发者选项里选中本应用，或执行 adb 命令。</string>
+
+    <string name="btn_start">1. 启动 mock 注入</string>
+    <string name="btn_push">2. 推送一个坐标</string>
+    <string name="btn_route">3. 回放步行路线</string>
+    <string name="label_scenario">服务端场景（模拟服务端统计口径）</string>
+    <string name="btn_collect">4. 采集样本并评分</string>
+    <string name="btn_stop">5. 停止 mock 并清理</string>
+
+    <string name="output_placeholder">等待操作…</string>
+</resources>

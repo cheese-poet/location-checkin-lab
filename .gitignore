@@ -1,0 +1,15 @@
+# 源码零依赖验证工具产生的产物
+build/
+out/
+selfcheck-out/
+
+# Gradle
+.gradle/
+local.properties
+*.iml
+.idea/
+
+# Android
+*.apk
+*.aab
+captures/
