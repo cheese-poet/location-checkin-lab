@@ -1,6 +1,6 @@
 # location-checkin-lab
 
-[![self-check](https://github.com/OWNER/location-checkin-lab/actions/workflows/selfcheck.yml/badge.svg)](https://github.com/OWNER/location-checkin-lab/actions/workflows/selfcheck.yml)
+[![self-check](https://github.com/cheese-poet/location-checkin-lab/actions/workflows/selfcheck.yml/badge.svg)](https://github.com/cheese-poet/location-checkin-lab/actions/workflows/selfcheck.yml)
 
 > ⚠️ 徽章里的 `OWNER` 要换成你的 GitHub 用户名，否则显示为失效图标。
 
