@@ -1,5 +1,9 @@
 # location-checkin-lab
 
+[![self-check](https://github.com/OWNER/location-checkin-lab/actions/workflows/selfcheck.yml/badge.svg)](https://github.com/OWNER/location-checkin-lab/actions/workflows/selfcheck.yml)
+
+> ⚠️ 徽章里的 `OWNER` 要换成你的 GitHub 用户名，否则显示为失效图标。
+
 位置签到风控的**检测引擎 + 攻击数据生成器**，用来回答一个问题：
 
 > 纯靠位置信息做签到，防守的上限到底在哪里？
@@ -25,11 +29,22 @@
 
 ### 1\. 只跑检测引擎（零依赖，不需要 Android SDK，不需要联网）
 
+```bash
+# Linux / macOS / CI
+bash tools/run-selfcheck.sh
+```
+
 ```powershell
+# Windows PowerShell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/run-selfcheck.ps1
 ```
 
-输出 11 个场景的通过/失败和一份审计报告样例，退出码 0/1 可直接接进 CI。
+两个脚本等价，都输出 11 个场景的通过/失败、一份审计报告样例，并把报告写到
+`selfcheck-out/selfcheck-report.txt`。退出码 0 = 全部通过，1 = 有用例失败，2 = 编译或环境错误。
+
+**注意 `run-selfcheck.sh` 必须用 `bash` 执行，不能用 `sh`。** 它依赖 bash 专有的
+`PIPESTATUS` 来正确传递退出码（POSIX sh 没有这个数组，退化后会让 CI 在自检失败时显示绿灯）。
+
 实测结果（全部通过）：
 
 ```
@@ -90,7 +105,11 @@ location-checkin-lab/
 │   ├── EnvProbe.kt                AppOps / 开发者选项 / root 取证
 │   ├── SignalCollector.kt         连续采样 + 气压计交叉验证
 │   └── MainActivity.kt            注入 → 采集 → 评分 闭环界面
-└── tools/run-selfcheck.ps1      零依赖自检脚本
+├── tools/
+│   ├── run-selfcheck.ps1       零依赖自检脚本（Windows）
+│   └── run-selfcheck.sh        零依赖自检脚本（Linux / macOS / CI）
+├── .github/workflows/selfcheck.yml  CI：JDK 17 与 21 双版本跑自检
+└── LICENSE                      MIT
 ```
 
 \---
@@ -247,14 +266,46 @@ location-checkin-lab/
 
 ## 环境踩坑记录
 
-写这个工程时踩到的三个坑，都会让人误判成「代码有问题」，记在这里省时间：
+写这个工程时踩到的坑，都会让人误判成「代码有问题」，记在这里省时间：
 
 1. **PowerShell 5.1 与 UTF-8 BOM。** `tools/run-selfcheck.ps1` 必须保存为 UTF-8 **with BOM**。
-没有 BOM 时 PS 5.1 按 GBK 解析，中文注释被解码成乱码后可能凑出引号或续行，
-**把后面的代码行吞进注释**。症状极具迷惑性：脚本「跑完了」、退出码 0、关键命令一行没执行、
-也不报错。很多编辑器（含自动化改写工具）保存时会静默去掉 BOM。
+   没有 BOM 时 PS 5.1 按 GBK 解析，中文注释被解码成乱码后可能凑出引号或续行，
+   **把后面的代码行吞进注释**。症状极具迷惑性：脚本「跑完了」、退出码 0、关键命令一行没执行、
+   也不报错。很多编辑器（含自动化改写工具）保存时会静默去掉 BOM。
+
 2. **PS 5.1 会拆分 `-Dfile.encoding=UTF-8`**，导致 Java 报 `ClassNotFoundException`。
-解决办法是别传这个参数——程序内部已用 `PrintStream` 强制 UTF-8 输出。
+   解决办法是别传这个参数——程序内部已用 `PrintStream` 强制 UTF-8 输出。
+
 3. **`Location.elapsedRealtimeNanos` 不设就永远是 0。** 这在 Android 12+ 上尤其明显，
-是「粗糙 mock」最典型的特征。写注入代码时最容易漏这一行。
+   是「粗糙 mock」最典型的特征。写注入代码时最容易漏这一行。
+
+4. **`java ... | tee f; exit $?` 会丢掉 java 的退出码**（`$?` 是 tee 的，永远是 0），
+   让 CI 在自检失败时显示绿灯。必须用 `${PIPESTATUS[0]}`，而它是 **bash 专有**的——
+   所以脚本要用 `bash` 执行，不能用 `sh`。
+
+5. **`find ... | while read` 会在子 shell 里执行**，数组收不到内容。
+   要用进程替换 `< <(find ... -print0)` 配合 `read -d ''`。
+
+---
+
+## 许可证
+
+MIT，见 [LICENSE](LICENSE)。
+
+## 关于公开这个仓库
+
+`core` 是真正值得复用的部分：一个平台无关、可测试的检测引擎。
+
+`app` 是一个**完整可编译的 mock 定位应用**。公开它等于把「假定位工具」的现成实现放出去——
+虽然用到的全是公开 API，但它替人省掉了全部工作量。发布前请权衡，两种做法：
+
+- **只公开 `core`**：把 `app` 留在私有仓库或本地分支；
+- **一起公开**：把上面的边界声明保留在显著位置，并考虑选用带使用限制的许可
+  （注意 MIT 不允许附加限制，真要限制就得换许可证）。
+
+本工程的定位是**检测引擎的测试夹具**，不是假定位工具——它的每个设计细节（精度抖动、
+GNSS 卫星状态采集、字段自洽的路线回放）都是为了「让检测规则可被复现地验证」，
+这一点和普通的假定位应用有本质区别。
+
+
 

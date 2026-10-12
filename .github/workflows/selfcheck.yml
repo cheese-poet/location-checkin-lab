@@ -1,0 +1,43 @@
+name: self-check
+
+# 检测引擎是纯 JVM、零依赖的，所以这套 CI 很便宜：不需要 Android SDK、不需要联网拉依赖，
+# 几秒钟就能跑完 11 个场景。这正是把 core 设计成不依赖 Android 的收益之一。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  self-check:
+    name: 风险评分引擎自检（JDK ${{ matrix.java }}）
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 17 是最低支持版本（字节码目标），21 是当前 LTS。
+        # 两个都测是为了保证 --release 17 的产物在真机上确实能跑。
+        java: ['17', '21']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: 运行自检
+        run: bash tools/run-selfcheck.sh
+
+      - name: 上传自检报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfcheck-report-jdk${{ matrix.java }}
+          path: selfcheck-out/selfcheck-report.txt
+          if-no-files-found: warn
